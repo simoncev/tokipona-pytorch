@@ -1,4 +1,4 @@
-"""Loading Gemma checkpoints and PEFT adapters."""
+"""Loading SmolLM2/Llama and legacy Gemma checkpoints with PEFT adapters."""
 
 import torch
 from peft import LoraConfig, PeftConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
@@ -21,15 +21,19 @@ def device_for(requested):
 
 def load_base(source, device, four_bit=False, tokenizer_source=None, merge=False):
     config = AutoConfig.from_pretrained(source)
-    if config.model_type != "gemma2":
-        raise ValueError("this port expects a Gemma 2 Hugging Face checkpoint")
+    if config.model_type not in {"gemma2", "llama"}:
+        raise ValueError("supported checkpoint architectures: llama (SmolLM2) and gemma2")
     if getattr(config, "quantization_config", None):
-        raise ValueError("supply a full Hugging Face Gemma 2 checkpoint, or use --four-bit to quantize it at load time")
+        raise ValueError("supply an unquantized checkpoint, or use --four-bit to quantize at load time")
     if four_bit and device != "cuda":
         raise ValueError("--four-bit requires CUDA and requirements-cuda.txt")
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_source or source, use_fast=True)
-    if not tokenizer.is_fast or tokenizer.pad_token_id is None:
-        raise ValueError("expected a fast Gemma 2 tokenizer with a padding token")
+    if not tokenizer.is_fast:
+        raise ValueError("a fast tokenizer is required for response boundary inspection")
+    if tokenizer.pad_token_id is None:
+        if tokenizer.eos_token_id is None:
+            raise ValueError("tokenizer needs a padding or end-of-sequence token")
+        tokenizer.pad_token = tokenizer.eos_token
     dtype = torch.float32
     if merge:
         dtype = "auto"
@@ -52,6 +56,9 @@ def add_lora(model, args):
     count = model.config.num_hidden_layers
     if args.layers > count:
         raise ValueError(f"--layers cannot exceed the model's {count} layers")
+    targets = {name.rsplit('.', 1)[-1] for name, _ in model.named_modules()}
+    if not {"q_proj", "v_proj"}.issubset(targets):
+        raise ValueError("model does not expose the expected q_proj and v_proj LoRA targets")
     if args.four_bit:
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=False)
     config = LoraConfig(

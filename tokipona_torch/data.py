@@ -29,7 +29,7 @@ def text_field(row, name):
     return value
 
 
-def gemma_messages(messages):
+def chat_messages(messages, tokenizer=None):
     if not isinstance(messages, list) or not messages:
         raise ValueError("messages must be a non-empty list")
     turns = []
@@ -37,23 +37,26 @@ def gemma_messages(messages):
         if not isinstance(message, dict):
             raise ValueError("each message must be an object")
         turns.append({"role": message.get("role"), "content": text_field(message, "content")})
-    if turns[0]["role"] == "system":
+    if turns[0]["role"] == "system" and tokenizer is not None and "<start_of_turn>" in str(tokenizer.chat_template):
         system = turns.pop(0)["content"]
         if not turns or turns[0]["role"] != "user":
             raise ValueError("the system message must be followed by a user turn")
         turns[0]["content"] = system + "\n\n" + turns[0]["content"]
-    for index, turn in enumerate(turns):
+    start = 1 if turns[0]['role'] == 'system' else 0
+    if start and len(turns) == 1:
+        raise ValueError("the system message must be followed by a user turn")
+    for index, turn in enumerate(turns[start:]):
         expected = "user" if index % 2 == 0 else "assistant"
         if turn["role"] != expected:
             raise ValueError(f"expected {expected!r} at turn {index + 1}")
     return turns
 
 
-def encode(row, tokenizer, max_length, loss_mode):
+def render_example(row, tokenizer, loss_mode):
     boundary = 0
     add_special_tokens = True
     if "messages" in row:
-        turns = gemma_messages(row["messages"])
+        turns = chat_messages(row["messages"], tokenizer)
         if turns[-1]["role"] != "assistant":
             raise ValueError("training messages must end with an assistant turn")
         full = tokenizer.apply_chat_template(turns, tokenize=False)
@@ -80,6 +83,11 @@ def encode(row, tokenizer, max_length, loss_mode):
 
     if tokenizer.bos_token and full.startswith(tokenizer.bos_token):
         add_special_tokens = False
+    return full, boundary, add_special_tokens
+
+
+def encode(row, tokenizer, max_length, loss_mode):
+    full, boundary, add_special_tokens = render_example(row, tokenizer, loss_mode)
     tokens = tokenizer(
         full, add_special_tokens=add_special_tokens, truncation=True, max_length=max_length,
         return_offsets_mapping=bool(boundary),
@@ -95,10 +103,30 @@ def encode(row, tokenizer, max_length, loss_mode):
     return {"input_ids": ids, "attention_mask": tokens["attention_mask"], "labels": labels}
 
 
+def inspect_example(row, tokenizer, max_length=256):
+    """Expose the exact training labels, including end markers and truncation."""
+    full, boundary, add_special_tokens = render_example(row, tokenizer, 'response')
+    untruncated = tokenizer(full, add_special_tokens=add_special_tokens)['input_ids']
+    encoded = encode(row, tokenizer, max_length, 'response')
+    tokens = []
+    if encoded:
+        for i, (token_id, label) in enumerate(zip(encoded['input_ids'], encoded['labels'])):
+            tokens.append(dict(position=i, token_id=token_id, piece=tokenizer.convert_ids_to_tokens(token_id),
+                decoded=tokenizer.decode([token_id]), attention_mask=encoded['attention_mask'][i],
+                label=label, contributes_to_loss=i > 0 and label != IGNORE))
+    return dict(rendered_chat=full, response_character_boundary=boundary,
+        original_tokens=len(untruncated), retained_tokens=len(tokens), truncated=len(untruncated)>max_length,
+        supervised_tokens=sum(t['contributes_to_loss'] for t in tokens), tokens=tokens,
+        target_text=tokenizer.decode([t['token_id'] for t in tokens if t['contributes_to_loss']]),
+        eos_supervised=any(t['token_id']==tokenizer.eos_token_id and t['contributes_to_loss'] for t in tokens))
+
+
 def load_dataset(path, tokenizer, max_length, loss_mode):
     examples = []
     dropped = 0
     for number, row in read_rows(path):
+        if row.get('approved_for_training') is False:
+            raise ValueError(f"{path}:{number}: draft example is not approved for training; use reviewed data")
         try:
             example = encode(row, tokenizer, max_length, loss_mode)
         except ValueError as exc:

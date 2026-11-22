@@ -1,9 +1,9 @@
-"""Command line for preparing data, tuning Gemma, and using adapters."""
+"""Command line for preparing data, CPU instruction tuning, and using adapters."""
 
 import argparse
 from pathlib import Path
 
-from .data import gemma_messages, load_dataset, split_jsonl
+from .data import chat_messages, load_dataset, split_jsonl
 
 
 def positive(value):
@@ -87,7 +87,7 @@ def generate(args):
         if args.system:
             turns.insert(0, {"role": "system", "content": args.system})
         inputs = tokenizer.apply_chat_template(
-            gemma_messages(turns), add_generation_prompt=True, tokenize=True,
+            chat_messages(turns, tokenizer), add_generation_prompt=True, tokenize=True,
             return_dict=True, return_tensors="pt",
         )
     input_device = model.get_input_embeddings().weight.device
@@ -119,7 +119,7 @@ def merge(args):
     print(f"Merged Hugging Face checkpoint: {args.output}")
 
 
-DEFAULT_MODEL = "google/gemma-2-2b-it"
+DEFAULT_MODEL = "HuggingFaceTB/SmolLM2-360M-Instruct"
 
 
 def main():
@@ -129,13 +129,13 @@ def main():
     split.add_argument("source", type=Path)
     split.add_argument("destination", type=Path)
 
-    training = commands.add_parser("train", help="train a Gemma 2 LoRA adapter")
+    training = commands.add_parser("train", help="train a SmolLM2 or legacy Gemma 2 LoRA adapter")
     training.add_argument("--model", default=DEFAULT_MODEL)
     training.add_argument("--train", type=Path, required=True)
     training.add_argument("--valid", type=Path)
     training.add_argument("--output", type=Path, required=True)
     training.add_argument("--loss", choices=("all", "response"), required=True)
-    training.add_argument("--max-length", type=positive, default=1024)
+    training.add_argument("--max-length", type=positive, default=256)
     training.add_argument("--steps", type=positive, default=100)
     training.add_argument("--batch-size", type=positive, default=1)
     training.add_argument("--accumulation", type=positive, default=1)
@@ -160,7 +160,7 @@ def main():
     prompt_mode.add_argument("--system")
 
     for command in (training, inference):
-        command.add_argument("--device", choices=("auto", "cuda", "mps", "cpu"), default="auto")
+        command.add_argument("--device", choices=("auto", "cuda", "mps", "cpu"), default="cpu")
         command.add_argument("--four-bit", action="store_true", help="CUDA NF4 loading")
 
     fusion = commands.add_parser("merge", help="merge a PEFT adapter into a full Hugging Face checkpoint")

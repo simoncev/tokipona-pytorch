@@ -1,0 +1,28 @@
+{
+  "version": "expanded-pilot-v1",
+  "config": {
+    "model": "models/SmolLM2-360M-Instruct",
+    "train": "data/instructions/living_by_the_code/expanded_context_v1/train.jsonl",
+    "valid": "data/instructions/living_by_the_code/expanded_context_v1/valid.jsonl",
+    "output": "runs/smollm2-expanded-001",
+    "steps": 100,
+    "max_length": 512,
+    "max_new_tokens": 128,
+    "learning_rate": 0.0002,
+    "layers": 4,
+    "rank": 4,
+    "alpha": 8,
+    "threads": 4,
+    "seed": 42,
+    "eval_every": 25
+  },
+  "rubric": "docs/evaluation_rubric_v1.md",
+  "rubric_sha256": "882410e257dc7b6df7f08691f7ce8bb9ba95a5f52a4fa2ea83abb794a37fdd48",
+  "spec_sha256": "018209b2db7d85eccacbcb8a71b71fe267d4b29122497159462822d2935deb13",
+  "dataset_sha256": {
+    "train": "91e81f3a932e71fa59cbddf9ff75e06aca3c3c9f104045c606bebbf41185536c",
+    "validation": "b3b8b621a5b67cef9a49c2a85371b01cfe632d9bbe2c13fdbcdaf26146ecaf32"
+  },
+  "selection": "One fixed 100-update run; final checkpoint evaluated. No validation-driven parameter search in this experiment.",
+  "final_test_used": false
+}

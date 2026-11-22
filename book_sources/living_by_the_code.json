@@ -1,0 +1,266 @@
+{
+  "document_id": "living-by-the-code-2019",
+  "title": "Living by the Code",
+  "library_file_id": "libfile_8ec0703a73048191b103a474f5bc9226",
+  "pdf_pages": 520,
+  "printed_page_offset": 18,
+  "content_end_pdf_page": 516,
+  "seed": 42,
+  "entries": [
+    {
+      "title": "Britt Barak",
+      "printed_page": 3,
+      "kind": "interview"
+    },
+    {
+      "title": "Ellen Shapiro",
+      "printed_page": 13,
+      "kind": "interview"
+    },
+    {
+      "title": "Antonio Leiva",
+      "printed_page": 25,
+      "kind": "interview"
+    },
+    {
+      "title": "Lara Martin",
+      "printed_page": 35,
+      "kind": "interview"
+    },
+    {
+      "title": "Sarah Olson",
+      "printed_page": 43,
+      "kind": "interview"
+    },
+    {
+      "title": "Paco Estévez García",
+      "printed_page": 51,
+      "kind": "interview"
+    },
+    {
+      "title": "Corey Leigh Latislaw",
+      "printed_page": 65,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: Working Managers",
+      "printed_page": 77,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Zarah Dominguez",
+      "printed_page": 79,
+      "kind": "interview"
+    },
+    {
+      "title": "Juhani Lehtimäki",
+      "printed_page": 87,
+      "kind": "interview"
+    },
+    {
+      "title": "Erik Hellman",
+      "printed_page": 101,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: The Rise of the Full-Stack Native Mobile App Developer",
+      "printed_page": 109,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Eduardo Castelló Ferrer",
+      "printed_page": 113,
+      "kind": "interview"
+    },
+    {
+      "title": "Ash Furrow",
+      "printed_page": 127,
+      "kind": "interview"
+    },
+    {
+      "title": "Hadi Hariri",
+      "printed_page": 137,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: On Public Speaking and a Speaker’s Technical Merit Only",
+      "printed_page": 145,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Roman Elizarov",
+      "printed_page": 151,
+      "kind": "interview"
+    },
+    {
+      "title": "John Sundell",
+      "printed_page": 165,
+      "kind": "interview"
+    },
+    {
+      "title": "Felix Krause",
+      "printed_page": 179,
+      "kind": "interview"
+    },
+    {
+      "title": "Joe Birch",
+      "printed_page": 191,
+      "kind": "interview"
+    },
+    {
+      "title": "Gabriel Peal",
+      "printed_page": 201,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: Sunsetting React Native",
+      "printed_page": 213,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Marin Todorov",
+      "printed_page": 219,
+      "kind": "interview"
+    },
+    {
+      "title": "Mike Wolfson",
+      "printed_page": 227,
+      "kind": "interview"
+    },
+    {
+      "title": "Ty Smith",
+      "printed_page": 235,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: Your Body as a System",
+      "printed_page": 257,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Marcin Moskala",
+      "printed_page": 263,
+      "kind": "interview"
+    },
+    {
+      "title": "Iñaki Villar",
+      "printed_page": 275,
+      "kind": "interview"
+    },
+    {
+      "title": "Segun Famisa",
+      "printed_page": 283,
+      "kind": "interview"
+    },
+    {
+      "title": "Fernando Cejas",
+      "printed_page": 291,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: It is about Philosophy... An Organization’s Culture and the Power of Humanity",
+      "printed_page": 303,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Tanner Wayne Nelson",
+      "printed_page": 313,
+      "kind": "interview"
+    },
+    {
+      "title": "Annyce Davis",
+      "printed_page": 321,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: So You Want to Be an Android Developer",
+      "printed_page": 329,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Raul Raja",
+      "printed_page": 333,
+      "kind": "interview"
+    },
+    {
+      "title": "Paul Blundell",
+      "printed_page": 345,
+      "kind": "interview"
+    },
+    {
+      "title": "César Valiente",
+      "printed_page": 355,
+      "kind": "interview"
+    },
+    {
+      "title": "Moyinoluwa Adeyemi",
+      "printed_page": 363,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: I Don’t Have It in My Blood",
+      "printed_page": 371,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Dr. Joseph Howard",
+      "printed_page": 379,
+      "kind": "interview"
+    },
+    {
+      "title": "Israel Ferrer Camacho",
+      "printed_page": 389,
+      "kind": "interview"
+    },
+    {
+      "title": "Ray Wenderlich",
+      "printed_page": 403,
+      "kind": "interview"
+    },
+    {
+      "title": "Cate Huston",
+      "printed_page": 415,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: Answer These 10 Questions to Understand if You’re a Good Manager",
+      "printed_page": 423,
+      "kind": "further_reading"
+    },
+    {
+      "title": "Cyril Mottier",
+      "printed_page": 429,
+      "kind": "interview"
+    },
+    {
+      "title": "Huyen Tue Dao",
+      "printed_page": 439,
+      "kind": "interview"
+    },
+    {
+      "title": "Marcin Krzyzanowski",
+      "printed_page": 447,
+      "kind": "interview"
+    },
+    {
+      "title": "Mike Nakhimovich",
+      "printed_page": 461,
+      "kind": "interview"
+    },
+    {
+      "title": "Danny Preussler",
+      "printed_page": 469,
+      "kind": "interview"
+    },
+    {
+      "title": "Mark Allison",
+      "printed_page": 483,
+      "kind": "interview"
+    },
+    {
+      "title": "Further Reading: The First Five Years",
+      "printed_page": 493,
+      "kind": "further_reading"
+    }
+  ]
+}
