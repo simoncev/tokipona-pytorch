@@ -1,81 +1,125 @@
 # Tokipona on PyTorch
 
-This is a standalone port of the Slavic Prism training path in Tokipona, based on the source archive for commit `29b46d647b3b7c62caf5e9437408358b1e86ac89`. It uses PyTorch, Hugging Face Transformers and PEFT for Gemma 2 LoRA. Bring your own JSONL training data and base checkpoint.
+An interactive experiment for understanding instruction tuning in Python/PyTorch on an **Intel i7 CPU with 32 GB RAM**. The proposed starting model is `HuggingFaceTB/SmolLM2-360M-Instruct`.
 
-| Tokipona baseline | PyTorch project |
+The immediate goal is to turn an English PDF into traceable instruction/answer examples, train a small LoRA adapter, and inspect exactly what changes before and after training. GPU training is outside the current experiment.
+
+## Current implementation
+
+This project began as a standalone port of the Slavic Prism training path from the Tokipona source archive at commit `29b46d647b3b7c62caf5e9437408358b1e86ac89`.
+
+**The current code still targets Gemma 2. SmolLM2 support and the notebook workflow below are planned, not implemented.**
+
+| Component | Implemented behavior | Required change |
+|---|---|---|
+| `tokipona_torch/data.py` | JSONL ingestion; chat, prompt/completion and text formats; response-only labels; truncation; ordered 90/10 split | Model-appropriate chat handling, visible token/mask inspection, and separate train/validation/test preparation |
+| `tokipona_torch/model.py` | Gemma 2 loading, LoRA adapters, adapter loading | Accept SmolLM2, verify compatible LoRA targets, and use CPU float32 |
+| `tokipona_torch/__main__.py` | `split`, `train`, `generate`, `merge`; loss logging, optional validation and checkpoint resume | CPU-first defaults and observable evaluation workflow |
+| PDF preparation | Not implemented | Extract text, preserve provenance, and create reviewed instruction examples |
+| Interactive notebook | Not implemented | Inspect data, tokens, masks, loss and before/after generation |
+| Reinforcement learning | Not implemented | Separate future stage with an explicit reward function |
+
+Response-only training currently masks prompt tokens with `-100`; padding is also excluded from the loss. Only the final assistant answer is supervised. Examples with no usable target after truncation are skipped and counted. Raw-text response detection and system-message folding currently contain Gemma-specific assumptions.
+
+## Local environment baseline
+
+Inspection on 22 November 2026 found:
+
+| Dependency | Project `.venv` |
 |---|---|
-| `src/prepare_adapters.py` | `split` preserves the original ordered 90/10 split. |
-| `src/run_pipeline.py` | `train --loss all` learns from the complete text sequence, then `merge` produces a v23-style checkpoint. |
-| `src/train_gemma_lora.py`, `src/train_skl1.py`, `training/run_sft_v25.py` | `train --loss response` supervises the final answer while retaining the prompt as context. Start from a merged v23-style checkpoint for cumulative tuning. |
-| `training/fuse_v25.py`, `training/build_gguf.py` | `merge` writes a standard Hugging Face checkpoint and tokenizer for llama.cpp export. |
-| Ollama clients | Use `generate` to test the model directly or export to GGUF for the existing clients. |
+| Python | 3.14.2 |
+| PyTorch | 2.15.0+cpu |
+| Transformers | 4.57.6 |
+| PEFT | 0.18.0 |
+| Accelerate | 1.12.0 |
+| SentencePiece | 0.2.3 |
+| PDF extraction / notebook support | `pypdf`, `ipykernel` and `notebook` were absent |
 
-The existing MySQL exporters, RAG clients and notebooks can stay in your original project. This package starts at their JSONL output boundary. It contains no catalogue data, training corpus, or weights.
+PyTorch, Transformers, PEFT and Accelerate imported successfully. A CPU tensor operation succeeded and `pip check` reported no broken requirements. This verifies basic environment operation, not a completed model-training run.
 
-## Setup on your RTX 5060 Ti
-
-From this folder in PowerShell, use Python 3.12 and a driver that supports the CUDA 12.8 wheel.
+The default shell `python` resolves to `C:\Python314\python.exe`, where PEFT was not available. Use the project interpreter explicitly:
 
 ```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu128
-.\.venv\Scripts\python.exe -m pip install -r requirements-cuda.txt
-.\.venv\Scripts\python.exe -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))"
-.\.venv\Scripts\hf.exe auth login
+.\.venv\Scripts\python.exe -c "import sys, torch, peft; print(sys.executable); print(torch.__version__); print(peft.__version__)"
+.\.venv\Scripts\python.exe -m pip check
 ```
 
-Accept the terms on the [Gemma 2 2B IT model page](https://huggingface.co/google/gemma-2-2b-it) before downloading it, or point `--model` at a local Hugging Face Gemma 2 checkpoint. The examples below use `python` from the activated environment, or you can substitute `.\.venv\Scripts\python.exe`.
+In VS Code, select **Python: Select Interpreter** and choose:
 
-On macOS, install `torch==2.8.0` from PyPI and use `requirements.txt`. Omit `--four-bit` and use `--device mps`. This path uses float32, which increases memory use. Start with a short sequence. CPU also uses float32 and is suitable for tiny local checkpoints and smoke tests.
+```text
+C:\Development\Genrep\tokipona-pytorch\.venv\Scripts\python.exe
+```
 
-## Input formats
+Select that same environment as the notebook kernel once kernel support is installed. The active VS Code interpreter was not independently confirmed during inspection.
 
-| JSONL row | Training behavior |
+`requirements.txt` contains the existing Transformers/PEFT dependencies but does not declare PyTorch, PDF extraction or notebook packages. CPU setup documentation and dependencies need to be completed together. `requirements-cuda.txt` belongs to the earlier GPU workflow and is not used for this experiment.
+
+## Dataset status and policy
+
+No `train.jsonl`, other dataset, English PDF, notebook or model weights were found in the project folder during the initial inspection. The original `train.jsonl` may exist elsewhere; its location still needs to be supplied or identified. Missing data must not be treated as recovered.
+
+The existing `.gitignore` excludes `.venv/`, `data/`, `runs/`, `models/`, Python caches and GGUF files. Keep source PDFs and generated datasets under `data/` so they remain local by default.
+
+Planned layout:
+
+```text
+data/
+  source/          English PDF
+  extracted/       Page text and extraction metadata
+  instructions/    Reviewed examples with provenance
+  splits/
+    train.jsonl
+    valid.jsonl
+    test.jsonl
+notebooks/         Interactive inspection notebook
+runs/              Adapters, loss logs and comparison outputs
+models/            Local base or merged checkpoints
+```
+
+Each generated example should carry the source document, page or passage identifier, and task type. Answers must be supported by the source; extraction alone does not create reliable question/answer pairs. Review the extracted text and generated examples before training. Scanned PDFs may require a separate OCR step.
+
+Use distinct datasets with distinct purposes:
+
+| Split | Purpose |
 |---|---|
-| `{"text":"[КНИГА: ... \| АВТОР: ...] Текст..." }` | Use `--loss all` for raw continuation. |
-| `{"messages":[{"role":"user","content":"Што е животот?"},{"role":"assistant","content":"..."}]}` | Uses the Gemma tokenizer's chat template. A leading system message is folded into the first user turn. With `--loss response`, only the final assistant turn is supervised. |
-| `{"prompt":"<start_of_turn>user\nПрашање...<end_of_turn>\n<start_of_turn>model\n","completion":"Одговор...<end_of_turn>"}` | Concatenates the two fields and masks the prompt when using `--loss response`. |
-| `{"text":"<start_of_turn>user\nПрашање...<end_of_turn>\n<start_of_turn>model\nОдговор...<end_of_turn>"}` | Preserves the literal turn markers. With `--loss response`, only content after the final model header is supervised. |
+| Training | Updates adapter weights |
+| Validation | Guides experiment settings and checkpoint selection |
+| Final test | Reserved for final evaluation after settings are fixed |
 
-Examples are right-truncated at `--max-length`. Training reports rows skipped because they have no usable target tokens after truncation. Padding is excluded from the loss. If the source uses overlapping book windows and you want held-out loss, supply train and validation exports from disjoint source passages or books. The original ordered split does not remove overlaps.
+Split by source passage or section **before** generating related questions. Keep overlapping passages, duplicates and paraphrases in the same split. Record the split seed, source membership and counts. The current ordered 90/10 splitter does not provide these protections or produce a final test set.
 
-## Stage 1. Raw continuation
+## Summary plan
 
-If you already have `train.jsonl` and `valid.jsonl`, use them directly. Otherwise split your existing export.
+1. **Prepare the CPU environment.** Resolve VS Code/Pylance to the project interpreter, add PDF and notebook dependencies, and explicitly use CPU execution. Avoid automatic GPU selection and CUDA quantization. Begin with float32, batch size 1 and short sequences; measure runtime and RAM before scaling.
+2. **Adapt model loading and chat formatting.** Support `HuggingFaceTB/SmolLM2-360M-Instruct`, use its tokenizer chat template, preserve supported system messages, and verify the LoRA target modules. Do not reuse literal Gemma turn markers for SmolLM2.
+3. **Prepare the English PDF dataset.** Extract page text, inspect extraction quality, group source passages into train/validation/test splits, then create and review instruction examples with provenance.
+4. **Make tokenization and masking visible.** Show the original example, rendered chat, token IDs, decoded token pieces, attention mask and labels. Identify prompt, answer and padding tokens; explain `-100` and the shifted next-token prediction used by causal language models. Check whether truncation removes answer tokens or the end-of-answer marker.
+5. **Run an observable supervised fine-tuning experiment.** Record baseline generation on fixed development prompts, train a small LoRA adapter with response-only loss, and log training loss, validation loss, supervised token counts, trainable parameter counts, settings and elapsed time. Start with a short smoke run before a longer experiment.
+6. **Compare and evaluate.** Generate again with the same prompts and decoding settings; display before/after answers side by side. Use validation results while developing. Evaluate the untouched final test set only after the configuration is fixed. Lower training loss alone is not evidence of improved instruction following.
+7. **Consider reinforcement learning separately.** Start only after the supervised baseline is understood. Define a reward function, its inputs, scoring rules and limitations, and separate reward-training data from evaluation data. Supervised response loss is not a reward function; the existing training command does not perform reinforcement learning.
 
-```powershell
-python -m tokipona_torch split data/merged_train.jsonl data/raw
-python -m tokipona_torch train --train data/raw/train.jsonl --valid data/raw/valid.jsonl --output runs/v23 --loss all --device cuda --four-bit --max-length 512 --steps 10
-python -m tokipona_torch merge --adapter runs/v23 --output models/v23
-```
+The notebook should expose these steps as separate cells so data preparation, encoding, baseline generation, training and evaluation can be inspected independently. Save the seed, model revision, dependency versions, dataset identifiers and generation settings with each run.
 
-The example uses 10 optimizer updates to check the pipeline before a longer run. Use `--accumulation 4 --max-length 1024 --learning-rate 2e-5` to carry over the corresponding raw-training settings. `--steps` counts optimizer updates, so compare the effective number of batches before reusing an MLX iteration count.
+## Existing command-line interface
 
-## Stage 2. Instruction tuning
-
-Use the merged output of stage 1 or a compatible full Hugging Face Gemma 2 checkpoint. If you only have an MLX-quantized or GGUF copy of v23, start stage 1 from the original Gemma base to produce a compatible v23-style checkpoint.
-
-```powershell
-python -m tokipona_torch train --model models/v23 --train data/train_final1.jsonl --output runs/v25 --loss response --device cuda --four-bit --steps 10 --max-length 512
-python -m tokipona_torch generate --adapter runs/v25 --prompt "Што е животот?" --system "Ти си словенски мислител." --device cuda --four-bit
-python -m tokipona_torch merge --adapter runs/v25 --output models/v25
-```
-
-The default LoRA configuration uses rank 8 on the query and value projections of the last eight layers. PEFT alpha 160 at rank 8 gives a multiplier of 20. CUDA `--four-bit` uses NF4, so the numeric results can differ from the original MLX quantization. Omit it for regular LoRA. Use `generate --raw` to inspect plain continuation or to pass literal Gemma turns. Generation is greedy by default.
-
-Add a separate `--valid` file for held-out loss. To continue an interrupted run, pass `--resume runs/v25/checkpoint-<step>` with the same base, adapter settings, training inputs and output directory. `--steps` remains the total update count. Keep the base checkpoint at its original path, or give `generate` or `merge` an explicit `--model` override.
-
-## GGUF and Ollama
-
-With [llama.cpp](https://github.com/ggml-org/llama.cpp) and its converter dependencies installed, convert the merged checkpoint. Substitute your local llama.cpp path and quantizer executable.
+The following commands describe the current Gemma-based implementation. They do not imply SmolLM2 support is complete.
 
 ```powershell
-python path/to/llama.cpp/convert_hf_to_gguf.py models/v25 --outfile models/v25-f16.gguf --outtype f16
-llama-quantize models/v25-f16.gguf models/v25-q4_k_m.gguf Q4_K_M
+.\.venv\Scripts\python.exe -m tokipona_torch --help
+.\.venv\Scripts\python.exe -m tokipona_torch train --help
+.\.venv\Scripts\python.exe -m tokipona_torch generate --help
 ```
 
-Create `models/Modelfile` with `FROM ./v25-q4_k_m.gguf` and run `ollama create slavic-prism-v25-torch -f models/Modelfile`. For literal turn-marker experiments use the matching input format consistently in both training and inference.
+- `split`: ordered 90/10 JSONL split; retained for the legacy workflow.
+- `train --loss all`: full-sequence continuation training.
+- `train --loss response`: supervise the final answer with the prompt retained as context.
+- `generate`: generate from a base model or a PEFT adapter; greedy decoding by default.
+- `merge`: merge an adapter into a full Hugging Face checkpoint.
 
-## Verification
+For current training or generation commands, specify `--device cpu` and omit `--four-bit`. The current default model remains `google/gemma-2-2b-it`; passing the proposed SmolLM2 model will fail until model loading is adapted. Raw continuation training is available but is not a prerequisite for the planned instruction-tuning experiment starting from an instruction model.
 
-The CPU smoke test uses a small randomly initialized Gemma 2 checkpoint and synthetic data. It covers ordered splitting, full-sequence and response-only labels, both training stages, held-out loss, checkpoint resume, PEFT generation and merged-model generation. Full Gemma 2 2B training, GPU paths, and GGUF/Ollama conversion were outside the smoke test.
+## Verification scope
+
+The inherited README reported a synthetic CPU smoke test using a tiny randomly initialized Gemma 2 checkpoint, covering splitting, labels, training, validation, resume, adapter generation and merged generation. That historical test was not rerun during the current inspection, and no test suite is present in this folder.
+
+The new experiment still needs checks for SmolLM2 chat boundaries, response labels, padding and truncation, split isolation, CPU training, and reproducible before/after generation. No English PDF has been processed and no SmolLM2 adapter has been trained yet. GGUF/Ollama export is deferred until the supervised experiment is working and understood.
